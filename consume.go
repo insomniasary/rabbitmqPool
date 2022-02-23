@@ -149,3 +149,22 @@ func consumeTask(pool *RabbitPool, receive *ConsumeReceive) {
 		}
 	}
 }
+
+func GetConsumeChannel(pool *RabbitPool) (*rChannel, error) {
+	var err error
+	defer pool.channelLock.Unlock()
+	pool.channelLock.Lock()
+	conn := pool.getConnection()
+	if conn.conn.IsClosed() {
+		pool.connections[pool.clientType][pool.connectionIndex].conn, err = rConnect(pool, true)
+		conn = pool.connections[pool.clientType][pool.connectionIndex]
+		if err != nil {
+			return nil, err
+		}
+	}
+	rChannel, err := pool.getChannelQueue(conn)
+	if err != nil {
+		return nil, err
+	}
+	return rChannel, nil
+}
